@@ -7,6 +7,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
     const link_mode = b.option(std.builtin.LinkMode, "linkage", "how the library should be linked (default: static)");
+    const is_static = (link_mode orelse .static) == .static;
     const enable_libpng = b.option(bool, "libpng", "Enable libpng to build the test case.") orelse false;
 
     test_step.dependOn(testsuite_step);
@@ -23,6 +24,7 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     mod.linkLibrary(zlib.artifact("z"));
+    if (is_static) mod.addCMacro("SPNG_STATIC", "1");
     mod.addCSourceFile(.{
         .file = libspng_src.path("spng/spng.c"),
     });
@@ -45,6 +47,7 @@ pub fn build(b: *std.Build) void {
             });
             testsuite_mod.linkLibrary(libpng.artifact("png"));
             testsuite_mod.linkLibrary(lib);
+            if (is_static) testsuite_mod.addCMacro("SPNG_STATIC", "1");
             testsuite_mod.addCSourceFile(.{
                 .file = libspng_src.path("tests/testsuite.c"),
             });
@@ -53,9 +56,7 @@ pub fn build(b: *std.Build) void {
                 .root_module = testsuite_mod,
             });
             const testsuite_exe_run = b.addRunArtifact(testsuite_exe);
-            if (b.args) |args| {
-                testsuite_exe_run.addArgs(args);
-            }
+            testsuite_exe_run.addPassthruArgs();
             testsuite_step.dependOn(&testsuite_exe_run.step);
         }
     } else {
