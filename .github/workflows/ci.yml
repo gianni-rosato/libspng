@@ -10,6 +10,7 @@ on:
       - ".github/workflows/ci.yml"
       - "build.zig"
       - "build.zig.zon"
+      - "tests/**"
 
   workflow_dispatch:
 
@@ -18,9 +19,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        zig-version: ["0.15.1"]
+        zig-version: ["0.17.0"]
         os: [ubuntu-latest, macos-latest, windows-latest]
-        optimize: [ReleaseSafe, ReleaseFast]
+        optimize: [debug, safe, fast, small]
+        linkage: [static, dynamic]
 
     runs-on: ${{ matrix.os }}
 
@@ -36,4 +38,7 @@ jobs:
           version: ${{ matrix.zig-version }}
 
       - name: Run `build`
-        run: zig build ${{ matrix.build-options }} -Doptimize=${{ matrix.optimize }} --summary all
+        run: zig build -Doptimize=${{ matrix.optimize }} -Dlinkage=${{ matrix.linkage }} --summary all
+
+      - name: Run round-trip tests
+        run: zig build test -Doptimize=${{ matrix.optimize }} -Dlinkage=${{ matrix.linkage }} --summary all

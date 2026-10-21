@@ -1,6 +1,6 @@
 .{
     .name = .spng,
-    .version = "0.0.1",
+    .version = "0.0.2",
     .dependencies = .{
         .libspng = .{
             .url = "git+https://github.com/randy408/libspng.git?ref=v0.7.4#fb768002d4288590083a476af628e51c3f1d47cd",
@@ -16,7 +16,7 @@
             .lazy = true,
         },
     },
-    .minimum_zig_version = "0.15.1",
+    .minimum_zig_version = "0.17.0",
     .paths = .{""},
     .fingerprint = 0x24970aec70ba5e4f,
 }
