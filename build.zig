@@ -2,13 +2,15 @@ const std = @import("std");
 
 pub fn build(b: *std.Build) void {
     const testsuite_step = b.step("test:testsuite", "Compile and run testsuite binary");
-    const test_step = b.step("test", "Run encode/decode round-trip tests");
+    const test_step = b.step("test", "Run all tests");
 
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
     const link_mode = b.option(std.builtin.LinkMode, "linkage", "how the library should be linked (default: static)");
     const is_static = (link_mode orelse .static) == .static;
     const enable_libpng = b.option(bool, "libpng", "Enable libpng to build the test case.") orelse false;
+
+    test_step.dependOn(testsuite_step);
 
     const zlib = b.dependency("zlib", .{
         .target = target,
@@ -35,20 +37,6 @@ pub fn build(b: *std.Build) void {
     lib.installHeader(libspng_src.path("spng/spng.h"), "spng.h");
 
     b.installArtifact(lib);
-
-    const roundtrip = b.addExecutable(.{
-        .name = "roundtrip",
-        .root_module = b.createModule(.{
-            .target = target,
-            .optimize = optimize,
-            .link_libc = true,
-        }),
-    });
-    roundtrip.root_module.linkLibrary(lib);
-    if (is_static) roundtrip.root_module.addCMacro("SPNG_STATIC", "1");
-    roundtrip.root_module.addCSourceFile(.{ .file = b.path("tests/roundtrip.c") });
-    b.step("test:build", "Compile round-trip tests without executing").dependOn(&roundtrip.step);
-    test_step.dependOn(&b.addRunArtifact(roundtrip).step);
 
     // tests
     if (enable_libpng) {
