@@ -7,6 +7,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
     const link_mode = b.option(std.builtin.LinkMode, "linkage", "how the library should be linked (default: static)");
+    const is_static = (link_mode orelse .static) == .static;
     const enable_libpng = b.option(bool, "libpng", "Enable libpng to build the test case.") orelse false;
 
     const zlib = b.dependency("zlib", .{
@@ -21,6 +22,7 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     mod.linkLibrary(zlib.artifact("z"));
+    if (is_static) mod.addCMacro("SPNG_STATIC", "1");
     mod.addCSourceFile(.{
         .file = libspng_src.path("spng/spng.c"),
     });
@@ -43,7 +45,9 @@ pub fn build(b: *std.Build) void {
         }),
     });
     roundtrip.root_module.linkLibrary(lib);
+    if (is_static) roundtrip.root_module.addCMacro("SPNG_STATIC", "1");
     roundtrip.root_module.addCSourceFile(.{ .file = b.path("tests/roundtrip.c") });
+    b.step("test:build", "Compile round-trip tests without executing").dependOn(&roundtrip.step);
     test_step.dependOn(&b.addRunArtifact(roundtrip).step);
 
     // tests
@@ -55,6 +59,7 @@ pub fn build(b: *std.Build) void {
             });
             testsuite_mod.linkLibrary(libpng.artifact("png"));
             testsuite_mod.linkLibrary(lib);
+            if (is_static) testsuite_mod.addCMacro("SPNG_STATIC", "1");
             testsuite_mod.addCSourceFile(.{
                 .file = libspng_src.path("tests/testsuite.c"),
             });
